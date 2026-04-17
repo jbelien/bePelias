@@ -9,6 +9,8 @@ import urllib
 import time
 import json
 
+from datetime import datetime
+
 from bepelias.utils import (log, vlog)
 
 
@@ -85,11 +87,13 @@ class Pelias:
             Pelias result.
         """
         delay = 1
+        start = datetime.now()
         while nb_attempts > 0:
             try:
                 with urllib.request.urlopen(url) as response:
                     res = response.read()
                     res = json.loads(res)
+                    res["pelias_time"] = (datetime.now() - start).total_seconds()
                     return res
             except urllib.error.HTTPError as exc:
                 if exc.code == 400 and self.interpolate_api in url:  # bad request, typically bad house number format

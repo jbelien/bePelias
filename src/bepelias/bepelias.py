@@ -2,6 +2,10 @@
 Base code for bePelias
 """
 
+# TODO: (?) in the different functions, we have some common code to check if coordinates are (0,0) and try to find better coordinates with interpolation or postcode search. 
+# We could probably factorize this code in a single function.
+# TODO: diff entre partie "unstruct" de struct_or_unstruct" et _call_unstruct?
+
 import re
 
 import pandas as pd
@@ -70,7 +74,7 @@ class BePelias:
                 feat["geometry"]["coordinates_orig"] = [0, 0]
                 feat["geometry"]["coordinates"] = interp["street_geometry"]["coordinates"]
                 feat["bepelias"] = {"interpolated": "street_center"}
-        
+
         if feat["geometry"]["coordinates"] == [0, 0]:
             # Fallback if no interpolation coords available
             vlog("    No coordinates found with interpolation, try to search with postcode and part of municipality...")
@@ -81,7 +85,7 @@ class BePelias:
                 part_of_munic_name = feat.get("properties", {}).get("addendum", {}).get("best", {}).get("part_of_municipality", {}).get("name", "")
                 if isinstance(part_of_munic_name, dict):
                     part_of_munic_name = list(part_of_munic_name.values())[0]
-                else: 
+                else:
                     part_of_munic_name = ""
                 vlog(f"    Part of munic name: {part_of_munic_name}")
 
@@ -145,7 +149,7 @@ class BePelias:
                                              number=feature['properties']['housenumber'],
                                              street=feature['properties']['street'])
 
-        if len(interp_res) == 0:
+        if len(interp_res) == 0 or "geometry" not in interp_res:
             return {"street_geometry": {"coordinates": street_center_coords}}
 
         vlog(f"interp_res:{interp_res}")
@@ -190,9 +194,13 @@ class BePelias:
             layers = "street,locality"
         pelias_struct = self.pelias.geocode(addr, layers=layers)
 
+        pelias_time = pelias_struct.get("pelias_time", 0)
+        vlog(f"    Pelias time: {pelias_time:.2f}")
+
         pelias_struct["bepelias"] = {"call_type": "struct",
                                      "in_addr": addr,
-                                     "pelias_call_count": 1}
+                                     "pelias_call_count": 1,
+                                     "pelias_time": pelias_time}
 
         if post_code is not None:
             if check_postcode:
@@ -228,6 +236,8 @@ class BePelias:
         vlog(f"  Call unstruct: '{addr}'")
         if addr and len(addr.strip()) > 0 and not re.match("^[0-9]+$", addr):
             pelias_unstruct = self.pelias.geocode(addr, layers=layers)
+            pelias_time += pelias_unstruct.get("pelias_time", 0)
+            vlog(f"    Pelias time: {pelias_time:.2f}")
             cnt = 2
         else:
             vlog("    Unstructured: empty inputs or only numbers, skip call")
@@ -235,8 +245,10 @@ class BePelias:
             pelias_unstruct = {"features": []}
         pelias_unstruct["bepelias"] = {"call_type": "unstruct",
                                        "in_addr": addr,
-                                       "pelias_call_count": cnt}
+                                       "pelias_call_count": cnt,
+                                       "pelias_time": pelias_time}
         pelias_struct["bepelias"]["pelias_call_count"] = cnt
+        pelias_struct["bepelias"]["pelias_time"] = pelias_time
 
         if post_code is not None:
             if check_postcode:
@@ -301,6 +313,7 @@ class BePelias:
         all_res = []
 
         call_cnt = 0
+        pelias_time = 0
         for check_postcode in [True, False]:
             previous_attempts = []
             for transf in transformer_sequence:
@@ -324,10 +337,12 @@ class BePelias:
                                                           check_postcode=check_postcode)
                     pelias_res["bepelias"]["transformers"] = ";".join(transf) + ("(no postcode check)" if not check_postcode else "")
                     call_cnt += pelias_res["bepelias"]["pelias_call_count"]
+                    pelias_time += pelias_res["bepelias"].get("pelias_time", 0)
 
                     if len(pelias_res["features"]) > 0:
                         if is_building(pelias_res["features"][0]):
                             pelias_res["bepelias"]["pelias_call_count"] = call_cnt
+                            pelias_res["bepelias"]["pelias_time"] = pelias_time
                             add_precision(pelias_res)
                             return pelias_res
 
@@ -351,6 +366,7 @@ class BePelias:
                                         if feat0["bepelias"]["precision"] == "street":
                                             vlog("Found a BeSt result matching street name and postcode, with numeric house number")
                                             pelias_res["bepelias"]["pelias_call_count"] = call_cnt
+                                            pelias_res["bepelias"]["pelias_time"] = pelias_time
 
                                             return pelias_res
 
@@ -418,19 +434,20 @@ class BePelias:
         if len(all_res) > 0:
             final_res = all_res[0]
             if len(final_res["features"]) == 0:
-                return {"features": [], "bepelias": {"pelias_call_count": call_cnt}}
+                return {"features": [], "bepelias": {"pelias_call_count": call_cnt, "pelias_time": pelias_time}}
 
             final_res["bepelias"]["pelias_call_count"] = call_cnt
+            final_res["bepelias"]["pelias_time"] = pelias_time
 
             add_precision(final_res)
 
             return final_res
 
-        return {"features": [], "bepelias": {"pelias_call_count": call_cnt}}
+        return {"features": [], "bepelias": {"pelias_call_count": call_cnt, "pelias_time": pelias_time}}
 
     def _call_unstruct(self, address):
         """
-        Call the unstructured version of Pelias with "address" as input
+        Call the unstructured version of Pelias with "address" as input, when the input is unstructured.
         If Pelias was able to parse the address (i.e., split it into component),
         we try to check that the results is not too far away from the input.
 
@@ -451,7 +468,8 @@ class BePelias:
 
         pelias_unstruct["bepelias"] = {"call_type": "unstruct",
                                        "in_addr": address,
-                                       "pelias_call_count": 1}
+                                       "pelias_call_count": 1,
+                                       "pelias_time": pelias_unstruct.get("pelias_time", 0)}
 
         parsed = pelias_unstruct["geocoding"]["query"]["parsed_text"]
 

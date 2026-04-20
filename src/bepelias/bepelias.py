@@ -2,10 +2,6 @@
 Base code for bePelias
 """
 
-# TODO: (?) in the different functions, we have some common code to check if coordinates are (0,0) and try to find better coordinates with interpolation or postcode search. 
-# We could probably factorize this code in a single function.
-# TODO: diff entre partie "unstruct" de struct_or_unstruct" et _call_unstruct?
-
 import re
 
 import pandas as pd
@@ -155,9 +151,9 @@ class BePelias:
         vlog(f"interp_res:{interp_res}")
         return {"geometry": {"coordinates": interp_res["geometry"]["coordinates"]}}
 
-    def _struct_or_unstruct(self, street_name, house_number, post_code, post_name, check_postcode=True):
+    def _struct_call(self, street_name, house_number, post_code, post_name, layers=None):
         """
-        Try structured version of Pelias. If it did not succeed, try the unstructured version, and keep the best result.
+        Try structured version of Pelias.
 
         Parameters
         ----------
@@ -176,8 +172,6 @@ class BePelias:
             Pelias result.
         """
 
-        # vlog(f"struct_or_unstruct('{street_name}', '{house_number}', '{post_code}', '{post_name}', {check_postcode})")
-        # Try structured
         addr = {"address": build_address(street_name, house_number),
                 "locality": post_name}
         if post_code is not None:
@@ -185,49 +179,41 @@ class BePelias:
         vlog("")
         vlog(f"  Call struct: {addr}")
 
-        layers = None
-        # If street name is empty, prevent to receive a "street" of "address" result by setting layers to "locality"
         if street_name is None or len(street_name) == 0:
             layers = "locality"
         # If there is no digit in street+housenumber, only keep street and locality layers
         elif re.search("[0-9]", addr["address"]) is None:
             layers = "street,locality"
-        pelias_struct = self.pelias.geocode(addr, layers=layers)
 
-        pelias_time = pelias_struct.get("pelias_time", 0)
-        vlog(f"    Pelias time: {pelias_time:.2f}")
+        pelias_struct = self.pelias.geocode(addr, layers=layers)
 
         pelias_struct["bepelias"] = {"call_type": "struct",
                                      "in_addr": addr,
                                      "pelias_call_count": 1,
-                                     "pelias_time": pelias_time}
+                                     "pelias_time": pelias_struct.get("pelias_time", 0)}
 
-        if post_code is not None:
-            if check_postcode:
-                pelias_struct = self.res_checker.filter_postcode(pelias_struct, post_code)
-        else:
-            vlog("    No postcode in input")
+        return pelias_struct
 
-        if len(pelias_struct["features"]) > 0:
-            vlog("    Structured results:")
-            vlog(feature_to_df(pelias_struct["features"]))
+    def _unstruct_call(self, street_name, house_number, post_code, post_name, layers=None):
+        """
+        Try unstructured version of Pelias.
 
-            for feat in pelias_struct["features"]:
-                # vlog(feat["properties"]["name"] if "name" in feat["properties"] else feat["properties"]["label"] if "label" in feat["properties"] else "--")
-                if feat["geometry"]["coordinates"] == [0, 0]:
-                    self._search_for_coordinates(feat)
+        Parameters
+        ----------
+        street_name : str
+            Street name.
+        house_number : str
+            House number.
+        post_code : str
+            Postal code.
+        post_name : str
+            City name.
 
-                if is_building(feat):
-
-                    # vlog("Found a building in res1")
-                    # vlog(feat)
-                    # vlog("pelias_struct")
-                    # vlog(pelias_struct)
-                    # vlog("-------")
-
-                    return pelias_struct
-
-        # Try unstructured
+        Returns
+        -------
+        dict
+            Pelias result.
+        """
         addr = build_address(street_name, house_number) + ", " + build_city(post_code, post_name)
         addr = re.sub("^,", "", addr.strip()).strip()
         addr = re.sub(",$", "", addr).strip()
@@ -236,58 +222,18 @@ class BePelias:
         vlog(f"  Call unstruct: '{addr}'")
         if addr and len(addr.strip()) > 0 and not re.match("^[0-9]+$", addr):
             pelias_unstruct = self.pelias.geocode(addr, layers=layers)
-            pelias_time += pelias_unstruct.get("pelias_time", 0)
-            vlog(f"    Pelias time: {pelias_time:.2f}")
-            cnt = 2
+            cnt = 1
         else:
             vlog("    Unstructured: empty inputs or only numbers, skip call")
-            cnt = 1
+            cnt = 0
             pelias_unstruct = {"features": []}
         pelias_unstruct["bepelias"] = {"call_type": "unstruct",
                                        "in_addr": addr,
                                        "pelias_call_count": cnt,
-                                       "pelias_time": pelias_time}
-        pelias_struct["bepelias"]["pelias_call_count"] = cnt
-        pelias_struct["bepelias"]["pelias_time"] = pelias_time
-
-        if post_code is not None:
-            if check_postcode:
-                pelias_unstruct = self.res_checker.filter_postcode(pelias_unstruct, post_code)
-        else:
-            vlog("    No postcode in input")
+                                       "pelias_time": pelias_unstruct.get("pelias_time", 0)}
 
         pelias_unstruct = self.res_checker.filter_streetname(pelias_unstruct, street_name)
 
-        if len(pelias_unstruct["features"]) > 0:
-            vlog("    Unstructured results:")
-            vlog(feature_to_df(pelias_unstruct["features"]))
-
-            for feat in pelias_unstruct["features"]:
-                # vlog(feat["properties"]["name"] if "name" in feat["properties"] else feat["properties"]["label"] if "label" in feat["properties"] else "--")
-                if feat["geometry"]["coordinates"] == [0, 0]:
-                    self._search_for_coordinates(feat)
-
-                if is_building(feat):
-                    return pelias_unstruct
-
-        # No result has a building precision -> get the best one, according the first feature
-
-        # If confidence of struct is better that confidence of unstruct OR struct contains 'street' --> choose struct
-        if len(pelias_struct["features"]) > 0:
-            if (pelias_unstruct["features"]) and len(pelias_unstruct["features"]) > 0 \
-                 and pelias_struct["features"][0]["properties"]["confidence"] > pelias_unstruct["features"][0]["properties"]["confidence"] \
-                 or "street" in pelias_struct["features"][0]["properties"]:
-                return pelias_struct
-
-        # Otherwise, if 'street' in unstruct --> choose unstruct
-        if len(pelias_unstruct["features"]) > 0 and "street" in pelias_unstruct["features"][0]["properties"]:
-            return pelias_unstruct
-
-        # Otherwise, if there are struct result --> choose struct
-        if len(pelias_struct["features"]) > 0:
-            return pelias_struct
-
-        # Otherwhise, choose unstruct
         return pelias_unstruct
 
     def _advanced_mode(self, street_name, house_number, post_code, post_name, transformer_sequence=None):
@@ -315,69 +261,109 @@ class BePelias:
         call_cnt = 0
         pelias_time = 0
         for check_postcode in [True, False]:
-            previous_attempts = []
-            for transf in transformer_sequence:
+            previous_attempts = {"struct": [], "unstruct": []}
+            for call_types, transf in transformer_sequence:
                 transf_addr_data = addr_data.copy()
                 for t in transf:
                     transf_addr_data = transform(transf_addr_data, t, remove_patterns)
 
-                vlog("")
-                vlog(f"Transformed address ({';'.join(transf)}): {transf_addr_data}")
-                if transf_addr_data in previous_attempts:
-                    vlog("    Already tried, skip Pelias call")
-                elif len(list(filter(lambda v: v and len(v) > 0, transf_addr_data.values()))) == 0:
-                    vlog("    No value to send, skip Pelias call")
-                else:
-                    previous_attempts.append(transf_addr_data)
+                layers = None
 
-                    pelias_res = self._struct_or_unstruct(transf_addr_data["street_name"],
-                                                          transf_addr_data["house_number"],
-                                                          transf_addr_data["post_code"],
-                                                          transf_addr_data["post_name"],
-                                                          check_postcode=check_postcode)
-                    pelias_res["bepelias"]["transformers"] = ";".join(transf) + ("(no postcode check)" if not check_postcode else "")
-                    call_cnt += pelias_res["bepelias"]["pelias_call_count"]
-                    pelias_time += pelias_res["bepelias"].get("pelias_time", 0)
+                # If street name is empty, prevent to receive a "street" of "address" result by setting layers to "locality"
+                if transf_addr_data["street_name"] is None or len(transf_addr_data["street_name"]) == 0:
+                    layers = "locality"
+                # If there is no digit in street+housenumber, only keep street and locality layers
+                elif re.search("[0-9]", transf_addr_data["street_name"]) is None and re.search("[0-9]", transf_addr_data["house_number"] or "") is None:
+                    layers = "street,locality"
 
-                    if len(pelias_res["features"]) > 0:
-                        if is_building(pelias_res["features"][0]):
-                            pelias_res["bepelias"]["pelias_call_count"] = call_cnt
-                            pelias_res["bepelias"]["pelias_time"] = pelias_time
-                            add_precision(pelias_res)
-                            return pelias_res
+                for call_type in call_types:
+                    vlog("")
+                    vlog(f"Call type:      {call_type}")
+                    vlog(f"Transformers:   {';'.join(transf)}")
+                    vlog(f"Address:        {transf_addr_data}")
+                    vlog(f"Check postcode: {check_postcode}")
+                    vlog(f"Layers:         {layers}")
 
-                        # If:
-                        # - 'no_city' in transformer
-                        # - first result is a BeSt result
-                        # - street name matches input street name
-                        # - postcode matches input postcode
-                        # - input house number contains only digits
-                        # --> keep this result
-                        # Conclusion after testing: has only an impact on +/- 1-2% of the addresses, slightly reducing the number of calls to Pelias.
-                        # It increase the complexity of the code, so it is disabled for the moment.
-                        if (transf_addr_data.get("post_name") or "") == "":
-                            feat0 = pelias_res["features"][0]
-                            if any(sn == street_name.upper() for sn in self.res_checker.get_feature_street_names(feat0)):
-                                if post_code is not None and "postalcode" in feat0["properties"] and feat0["properties"]["postalcode"] == post_code:
-                                    if re.match("^[0-9]+$", house_number or ""):
+                    if transf_addr_data in previous_attempts[call_type]:
+                        vlog("    Already tried, skip Pelias call")
+                    elif len(list(filter(lambda v: v and len(v) > 0, transf_addr_data.values()))) == 0:
+                        vlog("    No value to send, skip Pelias call")
+                    else:
+                        previous_attempts[call_type].append(transf_addr_data)
 
-                                        add_precision(pelias_res)
+                        if call_type == "struct":
 
-                                        if feat0["bepelias"]["precision"] == "street":
-                                            vlog("Found a BeSt result matching street name and postcode, with numeric house number")
-                                            pelias_res["bepelias"]["pelias_call_count"] = call_cnt
-                                            pelias_res["bepelias"]["pelias_time"] = pelias_time
+                            pelias_res = self._struct_call(transf_addr_data["street_name"],
+                                                           transf_addr_data["house_number"],
+                                                           transf_addr_data["post_code"],
+                                                           transf_addr_data["post_name"],
+                                                           layers=layers)
+                        else:
+                            pelias_res = self._unstruct_call(transf_addr_data["street_name"],
+                                                             transf_addr_data["house_number"],
+                                                             transf_addr_data["post_code"],
+                                                             transf_addr_data["post_name"],
+                                                             layers=layers)
 
-                                            return pelias_res
+                        if transf_addr_data["post_name"] is not None:
+                            if check_postcode:
+                                pelias_res = self.res_checker.filter_postcode(pelias_res, transf_addr_data["post_code"])
+                        else:
+                            vlog("    No postcode in input")
 
-                    all_res.append(pelias_res)
+                        for feat in pelias_res["features"]:
+                            if feat["geometry"]["coordinates"] == [0, 0]:
+                                self._search_for_coordinates(feat)
+
+                        pelias_res["bepelias"]["transformers"] = ";".join(transf) + ("(no postcode check)" if not check_postcode else "")
+                        pelias_res["bepelias"]["call_type"] = call_type
+
+                        call_cnt += pelias_res["bepelias"]["pelias_call_count"]
+                        pelias_time += pelias_res["bepelias"]["pelias_time"]
+
+                        # Stop conditions
+
+                        if len(pelias_res["features"]) > 0:
+                            # First features is a building
+                            if is_building(pelias_res["features"][0]):
+                                pelias_res["bepelias"]["pelias_call_count"] = call_cnt
+                                pelias_res["bepelias"]["pelias_time"] = pelias_time
+                                add_precision(pelias_res)
+                                return pelias_res
+
+                            # If:
+                            # - 'no_city' in transformer
+                            # - first result is a BeSt result
+                            # - street name matches input street name
+                            # - postcode matches input postcode
+                            # - input house number contains only digits
+                            # --> keep this result
+                            # Conclusion after testing: has only an impact on +/- 1-2% of the addresses, slightly reducing the number of calls to Pelias.
+                            # It increase the complexity of the code, so it is disabled for the moment.
+                            if (transf_addr_data.get("post_name") or "") == "":
+                                feat0 = pelias_res["features"][0]
+                                if any(sn == street_name.upper() for sn in self.res_checker.get_feature_street_names(feat0)):
+                                    if post_code is not None and "postalcode" in feat0["properties"] and feat0["properties"]["postalcode"] == post_code:
+                                        if re.match("^[0-9]+$", house_number or ""):
+
+                                            add_precision(pelias_res)
+
+                                            if feat0["bepelias"]["precision"] == "street":
+                                                vlog("Found a BeSt result matching street name and postcode, with numeric house number")
+                                                pelias_res["bepelias"]["pelias_call_count"] = call_cnt
+                                                pelias_res["bepelias"]["pelias_time"] = pelias_time
+
+                                                return pelias_res
+
+                        all_res.append(pelias_res)
+
             if sum(len(r["features"]) for r in all_res) > 0:
                 # If some result were found (even street-level), we stop here and select the best one.
                 # Otherwise, we start again, accepting any postcode in the result
                 vlog("Some result found with check_postcode=True")
                 break
 
-        vlog("No building result, keep the best match")
+        vlog("Stop condition not met, keep the best match")
         # Get a score for each result
         fields = ["housenumber", "street", "locality", "postalcode", "best"]
         scores = []
@@ -660,7 +646,7 @@ class BePelias:
             post_name = post_name.strip()
 
         try:
-            if mode in ("basic"):
+            if mode == "basic":
                 pelias_res = self.pelias.geocode({"address": build_address(street_name, house_number),
                                                   "postalcode": post_code,
                                                   "locality": post_name})
@@ -669,8 +655,9 @@ class BePelias:
                 return to_rest_guidelines(pelias_res, with_pelias_result)
 
             elif mode == "simple":
-                pelias_res = self._struct_or_unstruct(street_name, house_number, post_code, post_name)
-                add_precision(pelias_res)
+
+                pelias_res = self._advanced_mode(street_name, house_number, post_code, post_name,
+                                                 transformer_sequence=[(["struct", "unstruct"], [])])
 
                 return to_rest_guidelines(pelias_res, with_pelias_result)
 
@@ -773,12 +760,12 @@ class BePelias:
         # Checking Interpolation
 
         try:
-            interp_res = self.pelias.interpolate(lat=50.83582,
-                                                 lon=4.33844,
+            interp_res = self.pelias.interpolate(lat=50.83583,
+                                                 lon=4.33845,
                                                  number=20,
                                                  street="Avenue Fonsny")
             # vlog(interp_res)
-            if len(interp_res) > 0 and "geometry" not in interp_res:
+            if len(interp_res) > 1 and "geometry" not in interp_res:
                 return {
                     "status": "DEGRADED",
                     "details": {

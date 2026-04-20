@@ -2,6 +2,7 @@
 """
 import json
 from fastapi import status
+import re
 
 from elasticsearch import Elasticsearch, NotFoundError
 
@@ -36,6 +37,16 @@ class PeliasElastic:
 
         if post_code is None and city_name is None:
             return {"error": "Either 'postCode' or 'cityName' should be provided",
+                    "status_code": status.HTTP_422_UNPROCESSABLE_ENTITY}
+
+        if post_code and not re.match("^[0-9]{4}$", str(post_code)):
+            # Shoud not happen because of the validation in fastapi, but just in case this function is called directly
+            return {"error": "'postCode' should be a 4-digit number",
+                    "status_code": status.HTTP_422_UNPROCESSABLE_ENTITY}
+
+        if city_name and not re.match("^[A-ZÀÂÄÅÆÇÈÉÊËÌÍÎÏÒÓÔÖÙÚÛÜ '.()/-]+$", city_name.upper()):
+            # Shoud not happen because of the validation in fastapi, but just in case this function is called directly
+            return {"error": "'cityName' should be a string (letters, spaces, apostrophes, dots and hyphens only)",
                     "status_code": status.HTTP_422_UNPROCESSABLE_ENTITY}
 
         must = [{"term": {"layer": "locality"}}]
@@ -84,7 +95,7 @@ class PeliasElastic:
 
             return res
         except NotFoundError:
-            return {"features": []}
+            return to_rest_guidelines({"features": []}, False)
         except ConnectionError as exc:
             log("ES ConnectionError")
             log(exc)

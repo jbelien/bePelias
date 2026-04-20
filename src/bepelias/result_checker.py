@@ -62,7 +62,7 @@ class ResultChecker:
 
         pelias_res["features"] = filtered_feat
 
-        vlog(f"    Check postcode ({self.postcode_match_length}) : {nb_res} --> {len(filtered_feat)}")
+        vlog(f"    Check postcode ({postcode}/{self.postcode_match_length}) : {nb_res} --> {len(filtered_feat)}")
         return pelias_res
 
     def filter_streetname(self, pelias_res, street_name):

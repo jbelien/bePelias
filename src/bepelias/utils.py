@@ -113,7 +113,7 @@ def to_rest_guidelines(pelias_res, with_pelias_raw=True):
     items = []
     for feat in pelias_res["features"]:
         if "addendum" in feat["properties"] and "best" in feat["properties"]["addendum"]:
-            item = feat["properties"]["addendum"]["best"]
+            item = copy.deepcopy(feat["properties"]["addendum"]["best"])
             item["coordinates"] = convert_coordinates(feat["geometry"]["coordinates"])
         else:
             item = {"coordinates": convert_coordinates(feat["geometry"]["coordinates"]),

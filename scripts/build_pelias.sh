@@ -10,20 +10,16 @@ PELIAS="$(pwd)/pelias/pelias"
 rm -rf pelias
 git clone  https://github.com/pelias/docker.git pelias
 
-mkdir -p $DIR
-cp pelias.json $DIR
-cp pelias/projects/belgium/elasticsearch.yml  $DIR
-cp pelias/projects/belgium/docker-compose.yml  $DIR
+mkdir -p "$DIR/data"
 
-mkdir $DIR/data
+cp pelias.json "$DIR/"
+cp pelias/projects/belgium/elasticsearch.yml  "$DIR/"
+cp pelias/projects/belgium/docker-compose.yml  "$DIR/"
+cp scripts/prepare_interpolation.sh "$DIR/data"
 
-cp scripts/prepare_interpolation.sh $DIR/data
+echo 'DATA_DIR=./data' >> "$DIR/.env"
 
 cd $DIR
-
-
-echo 'DATA_DIR=./data' >> .env
-
 
 $PELIAS compose pull
 $PELIAS elastic start

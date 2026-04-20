@@ -238,6 +238,9 @@ def test_check_single_addr(addr, expectings):
             (call_reverse, {"lat": 0, "lon": 0}, 422),
             (call_reverse, {"lat": 50.8, "lon": None}, 422),
             (call_search_city, {"postcode": None, "cityname": None}, 422),
+            (call_search_city, {"postcode": "abc", "cityname": None}, 422),
+            (call_search_city, {"postcode": None, "cityname": 123}, 422),
+            (call_search_city, {"postcode": None, "cityname": 'test=fail'}, 422),
             (call_get_by_id, {"bestid": ""}, 404),
             (call_get_by_id, {"bestid": "1234"}, 422)
         ]
@@ -277,7 +280,7 @@ def test_check_unstruct(addr, expectings):
                                        (["total"], 1)]),
             ((5190, "Spy"),  [(["items", 0, "municipality", "code"], "92140"),
                               (["total"], 1)]),
-            (("0612", None),  [(["total"], 0)]),
+            (("9999", None),  [(["total"], 0)]),
             ((9000, None),  [(["items", 0, "municipality", "code"], "44021"),
                              (["total"], 1)]),
         ]
@@ -366,6 +369,54 @@ def test_batch_call(filename: Literal['tests/data/data.csv']):
         assert json_item["total"] == len(json_item["items"])
         for item in json_item["items"]:
             assert "precision" in item
+
+
+@pytest.mark.parametrize(
+        "filename",
+        [
+            "tests/data/data.csv"
+        ]
+)
+def test_batch_search_city(filename: Literal['tests/data/data.csv']):
+    """Send all addresses from filename to search_city API
+
+    Args:
+        filename (str): CVS filename
+    """
+    addresses = pd.read_csv(filename)  # .iloc[0:10]
+
+    for fld in [STREET_FIELD, HOUSENBR_FIELD, POSTCODE_FIELD, CITY_FIELD]:
+        assert fld in addresses, f"Missing field '{fld}' in input CSV file"
+
+    # Only postal code
+    addresses["json"] = addresses[[POSTCODE_FIELD]].fillna("").apply(call_search_city, axis=1)
+    for json_item in addresses["json"]:
+        assert "items" in json_item
+        #  assert len(json_item["items"]) > 0, f"Expecting at least one result: {json_item}"
+        assert json_item["total"] == len(json_item["items"])
+        for item in json_item["items"]:
+            assert "municipality" in item and "code" in item["municipality"], f"Expecting municipality code in {item}"
+            assert "postalInfo" in item and "postalCode" in item["postalInfo"], f"Expecting postal code in {item}"
+
+    # Both postal code and city name
+    addresses["json"] = addresses.fillna("").apply(lambda rec: call_search_city(postcode=rec[POSTCODE_FIELD], cityname=rec[CITY_FIELD]), axis=1)
+    for json_item in addresses["json"]:
+        assert "items" in json_item
+        #  assert len(json_item["items"]) > 0, f"Expecting at least one result: {json_item}"
+        assert json_item["total"] == len(json_item["items"])
+        for item in json_item["items"]:
+            assert "municipality" in item and "code" in item["municipality"], f"Expecting municipality code in {item}"
+            assert "postalInfo" in item and "postalCode" in item["postalInfo"], f"Expecting postal code in {item}"
+
+    # Only city name
+    addresses["json"] = addresses.fillna("").apply(lambda rec: call_search_city(postcode=None, cityname=rec[CITY_FIELD]), axis=1)
+    for json_item in addresses["json"]:
+        assert "items" in json_item
+        #  assert len(json_item["items"]) > 0, f"Expecting at least one result: {json_item}"
+        assert json_item["total"] == len(json_item["items"])
+        for item in json_item["items"]:
+            assert "municipality" in item and "code" in item["municipality"], f"Expecting municipality code in {item}"
+            assert "postalInfo" in item and "postalCode" in item["postalInfo"], f"Expecting postal code in {item}"
 
 
 @pytest.mark.parametrize(

@@ -306,13 +306,15 @@ def _geocode_reverse(lat: Annotated[float, Query(description="Latitude, in EPSG:
             })
 def _search_city(
             post_code: Annotated[
-                            Union[str, None],
+                            Union[int, None],
                             Query(description="The post code (a.k.a postal code, zip code etc.) (cf. Fedvoc).",
-                                  openapi_examples={'1060': {'value': '1060'}, '1000': {'value': '1000'}, '[empty]': {'value': ''}},
+                                  ge=1000, le=9999,
+                                  openapi_examples={'1060': {'value': 1060}, '1000': {'value': 1000}, '[empty]': {'value': None}},
                                   alias="postCode")] = None,
             city_name: Annotated[
                             Union[str, None],
                             Query(description="Name with which the geographical area that groups the addresses for postal purposes can be indicated, usually the city (cf. Fedvoc).",
+                                  min_length=2, max_length=50, pattern="^[A-ZÀÂÄÆÇÈÉÊËÎÏÒÓÔÖÛÜa-zàâäæçèéêëîïòóôöûü '.()/-]+$",
                                   openapi_examples={'Saint-Gilles': {'value': 'Saint-Gilles'}, 'Sint-Gillis': {'value': 'Sint-Gillis'}, '[empty]': {'value': ''}},
                                   alias="cityName")] = None,
             request: Request = None,

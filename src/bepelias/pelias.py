@@ -95,7 +95,7 @@ class Pelias:
                     res = json.loads(res)
                     res["pelias_time"] = (datetime.now() - start).total_seconds()
                     return res
-            except urllib.error.HTTPError as exc:
+            except (urllib.error.HTTPError, ConnectionRefusedError, urllib.error.URLError) as exc:
                 if exc.code == 400 and self.interpolate_api in url:  # bad request, typically bad house number format
                     log(f"Error 400 ({url}): {exc}")
                     return {}
@@ -107,10 +107,7 @@ class Pelias:
                 log(f"Cannot get Pelias results ({url}): {exc}. Try again in {delay} seconds...")
                 time.sleep(delay)
                 delay += 0.5
-            except ConnectionRefusedError as exc:
-                raise PeliasException(f"Cannot connect to Pelias, service probably down ({url}): {exc}") from exc
-            except urllib.error.URLError as exc:
-                raise PeliasException(f"Cannot connect to Pelias, service probably down ({url}): {exc}") from exc
+
             except Exception as exc:
                 log(f"Cannot get Pelias results ({url}): {exc}")
                 raise exc

@@ -10,7 +10,6 @@ by Pelias (csv module)
 """
 import os
 import sys
-import urllib.request
 import logging
 
 import getopt
@@ -70,27 +69,6 @@ def log(arg):
     None.
     """
     logging.info(arg)
-
-
-def download(url, filename):
-    """
-
-    Parameters
-    ----------
-    url: str
-       url to fetch
-    filename: str
-       local file to save
-
-    Returns
-    -------
-
-    None
-    """
-    log(f"Downloading {url} in to {filename}")
-    with urllib.request.urlopen(url) as response:
-        with open(filename, "wb") as file:
-            file.write(response.read())
 
 
 def get_language_prefered_order(region):

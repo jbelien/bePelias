@@ -48,7 +48,16 @@ if [[ $ACTION == "prepare_csv" ||  $ACTION ==  "all" ]]; then
     
     mkdir -p data
     
-    $DOCKER_COMPOSE run --rm dataprep  /prepare_csv.sh  $REGION
+    #$DOCKER_COMPOSE run --rm dataprep  /prepare_csv.sh  $REGION
+
+    $DOCKER_COMPOSE run --remove-orphans -w /bepelias dataprep make all REGION=$REGION
+
+    # Variants:
+    # $DOCKER_COMPOSE run --remove-orphans -w /bepelias dataprep prepare all REGION=$REGION
+    # --> will keep intermediate files in /data/in
+
+    # $DOCKER_COMPOSE run --remove-orphans -w /bepelias dataprep all_lowdisk REGION=$REGION
+    # --> will delete intermediate files in /data/in as soon as they are not needed anymore (reduces disk usage)
     
     echo "CSV ready"
     date

@@ -1,6 +1,6 @@
 FROM bepelias/base
 
-RUN yum -y install maven java-17-openjdk git wget unzip yum-utils && package-cleanup --leaves --all
+RUN yum -y install maven java-17-openjdk git wget unzip yum-utils make && package-cleanup --leaves --all
 
 RUN git clone --branch 1.5.0 https://github.com/Fedict/best-tools.git
 
@@ -10,5 +10,5 @@ ENV JAVA_HOME="/usr/lib/jvm/jre-17/"
 
 RUN mvn clean install -DskipTests
 
-COPY ./scripts/prepare_csv.sh /
+COPY ./scripts/Makefile /bepelias/Makefile
 COPY src/bepelias/prepare_best_files.py src/bepelias/__init__.py /bepelias/

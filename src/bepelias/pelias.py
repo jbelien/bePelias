@@ -96,9 +96,10 @@ class Pelias:
                     res["pelias_time"] = (datetime.now() - start).total_seconds()
                     return res
             except (urllib.error.HTTPError, ConnectionRefusedError, urllib.error.URLError) as exc:
-                if exc.code == 400 and self.interpolate_api in url:  # bad request, typically bad house number format
+                if hasattr(exc, 'code') and exc.code == 400 and self.interpolate_api in url:  # bad request, typically bad house number format
                     log(f"Error 400 ({url}): {exc}")
                     return {}
+                # otherwise, we try again, up to nb_attempts times
 
                 if nb_attempts == 1:
                     log(f"Cannot get Pelias results after several attempts({url}): {exc}")

@@ -57,12 +57,12 @@ PREPARED_MARKER := $(DATA_OUT)/.prepared-$(REGION)
 
 help:
 	@echo "Targets:"
-	@echo "  make -f /bepelias/Makefile.prepare_csv download"
-	@echo "  make -f /bepelias/Makefile.prepare_csv unzip REGION=all|bru|wal|vlg"
-	@echo "  make -f /bepelias/Makefile.prepare_csv xml REGION=all|bru|wal|vlg"
-	@echo "  make -f /bepelias/Makefile.prepare_csv convert REGION=all|bru|wal|vlg"
-	@echo "  make -f /bepelias/Makefile.prepare_csv prepare REGION=all|bru|wal|vlg"
-	@echo "  make -f /bepelias/Makefile.prepare_csv clean"
+	@echo "  make download                          # Download BOSA zipfile"
+	@echo "  make unzip REGION=all|bru|wal|vlg      # Unzip BOSA zipfile"
+	@echo "  make xml REGION=all|bru|wal|vlg        # Extract XML files from the regional zipfiles"
+	@echo "  make convert REGION=all|bru|wal|vlg    # Convert XML files to CSV using the Java BOSA converter"
+	@echo "  make prepare REGION=all|bru|wal|vlg    # Prepare final CSV files for Pelias import using the Python prepare_best_files.py script"
+	@echo "  make clean                             # Clean all intermediate and output files"
 
 all: prepare clean-input
 
@@ -128,7 +128,8 @@ $(DATA_IN)/%.openaddress_ready: $(DATA_IN)/%.xml_extracted
 	      $(DATA_IN)/*_municipalities.csv \
 	      $(DATA_IN)/*_postal_street.csv \
 	      $(DATA_IN)/*_postalinfo.csv \
-	      $(DATA_IN)/*_streetnames.csv
+	      $(DATA_IN)/*_streetnames.csv \
+		  $(DATA_IN)/*.docx 
 	touch $@
 
 # --- Step 4: convert openaddress CSVs into final bestaddresses CSVs ---

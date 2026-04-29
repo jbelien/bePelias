@@ -56,6 +56,13 @@ def call_health():
     return call_ws(f'http://{WS_HOSTNAME}/REST/bepelias/v1/health', {})
 
 
+def call_metadata():
+    """
+        Call bePelias web service
+    """
+    return call_ws(f'http://{WS_HOSTNAME}/REST/bepelias/v1/metadata', {})
+
+
 def call_geocode(addr_data, mode="advanced", with_pelias_result=False):
     """
         Call bePelias web service
@@ -209,6 +216,15 @@ def test_check_health():
     """
     health = call_health()
     assert "status" in health and health["status"] == "UP"
+
+
+def test_check_metadata():
+    """Check metadata
+    """
+    metadata = call_metadata()
+    assert "error" not in metadata and metadata["status_code"] == 200
+
+    assert "download" in metadata, "Expecting 'download' field in metadata"
 
 
 @pytest.mark.parametrize(

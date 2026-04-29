@@ -5,6 +5,14 @@
 #  - make all_lowdisk # runs the full pipeline and delete intermediate files as soon as possible, to minimize disk usage
 #  - make clean-input # cleans intermediate files from the input directory
 
+#
+
+define update_md
+	echo "Updating metadata: $(1)=$(2)"
+
+	(test -s  $(METADATA_FILE) && cat $(METADATA_FILE) || echo '{}') | jq "$(1)=\"$(2)\"" > $(METADATA_FILE).tmp && cat $(METADATA_FILE).tmp > $(METADATA_FILE) && rm $(METADATA_FILE).tmp
+	
+endef
 
 SHELL := /usr/bin/env bash
 .SHELLFLAGS := -euo pipefail -c
@@ -12,6 +20,7 @@ SHELL := /usr/bin/env bash
 
 DATA_IN := /data/in
 DATA_OUT := /data
+METADATA_FILE := $(DATA_OUT)/metadata.json
 
 GLOBAL_ZIP := $(DATA_IN)/best-full-latest.zip
 CONVERTER_JAR := /best-tools/java/converter/target/converter-1.*.jar
@@ -84,6 +93,7 @@ prepare: $(PREPARED_MARKER)
 $(GLOBAL_ZIP):
 	mkdir -p $(DATA_IN)
 	wget --progress=dot:giga -O "$@" https://opendata.bosa.be/download/best/best-full-latest.zip
+	$(call update_md,.download,`date --iso-8601=seconds`)
 
 
 # --- Step 1: extract regional zip(s) from the global zip ---
@@ -95,6 +105,10 @@ $(DATA_IN)/%.regional_zip_extracted: $(GLOBAL_ZIP)
 	mkdir -p $(DATA_IN)
 
 	cd $(DATA_IN) && unzip -o best-full-latest.zip  $(REG)'*.zip'
+# 	cat $(DATA_OUT)/metadata.json | jq ".$(REGION).xmlversion = \"`ls $(DATA_IN)/*Address*.zip |head -1 | tr -d -c 0-9`\"" > $(DATA_OUT)/metadata.json
+	
+	$(call update_md,.$(REGION).xmlversion,`ls $(DATA_IN)/*Address*.zip |head -1 | tr -d -c 0-9`)
+
 	touch $@
 
 # --- Step 2: extract XML from the regional zip(s) ---
@@ -147,6 +161,7 @@ $(PREPARED_MARKER): $(OA_MARKERS)
 
 	. /bepelias_venv/bin/activate && \
 	$(PYTHON) $(PREPARE_PY) -i $(DATA_IN) -o $(DATA_OUT) -r $(REGION)
+	$(call update_md, .$(REGION).csv,`date --iso-8601=seconds`)
 	touch $@
 
 # --- Cleanup ---

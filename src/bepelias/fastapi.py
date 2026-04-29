@@ -32,7 +32,8 @@ from bepelias.bepelias import BePelias
 
 from bepelias.model import (GeocodeOutput, BePeliasError, Health,
                             ReverseGeocodeOutput, SearchCityOutput,
-                            GetByIdOutput, BESTID_PATTERN)
+                            GetByIdOutput, BESTID_PATTERN,
+                            Metadata)
 
 from bepelias.config import (default_postcode_match_length, default_similarity_threshold)
 
@@ -407,6 +408,28 @@ def _get_by_id(
                 }})
 def _health(response: Response, request: Request = None) -> Health:
     res = bepelias.health()
+    if "status_code" in res:
+        response.status_code = res["status_code"]
+    res["self"] = str(request.url)
+
+    return res
+
+############
+# /metadata  #
+############
+
+
+@app.get('/metadata', response_model_exclude_none=True, responses={
+                status.HTTP_200_OK: {
+                    "model": Metadata,
+                    "description": "Metadata about the data used for geocoding"
+                },
+                status.HTTP_500_INTERNAL_SERVER_ERROR: {
+                    "model": BePeliasError,
+                    "description": "In case an error occurred"
+                }})
+def _metadata(response: Response, request: Request = None):
+    res = bepelias.metadata()
     if "status_code" in res:
         response.status_code = res["status_code"]
     res["self"] = str(request.url)

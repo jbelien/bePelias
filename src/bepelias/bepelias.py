@@ -3,6 +3,7 @@ Base code for bePelias
 """
 
 import re
+import json
 
 import pandas as pd
 from fastapi import status
@@ -793,3 +794,19 @@ class BePelias:
         """
 
         return self.pelias_elastic.get_by_id(bestid)
+
+    def metadata(self):
+        """
+        See fastapi._metadata
+        """
+        try:
+            with open("/data/metadata.json", "r", encoding="utf-8") as f:
+                metadata = json.load(f)
+        except json.JSONDecodeError:
+            return {"error": "Unable to load metadata (invalid JSON format)",
+                    "status_code": status.HTTP_500_INTERNAL_SERVER_ERROR}
+        except FileNotFoundError:
+            return {"error": "Unable to load metadata (file not found)",
+                    "status_code": status.HTTP_500_INTERNAL_SERVER_ERROR}
+
+        return metadata

@@ -1,6 +1,6 @@
 FROM bepelias/base
 
-RUN yum -y install maven java-17-openjdk git wget unzip yum-utils make && package-cleanup --leaves --all
+RUN yum -y install maven java-17-openjdk git wget unzip yum-utils make jq && package-cleanup --leaves --all
 
 RUN git clone --branch 1.5.0 https://github.com/Fedict/best-tools.git
 

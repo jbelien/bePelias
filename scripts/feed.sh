@@ -8,7 +8,6 @@ REGION=${2:-"all"}
 # to reduce down time on a reset : prepare_csv ; reset_data ; update
 
 # This script runs on the host machine. It builds Pelias and bePelias and run them
-echo "Starting build.sh..."
 
 echo "ACTION: $ACTION"
 
@@ -20,6 +19,7 @@ PELIAS="$(pwd)/pelias/pelias"
 
 DOCKER=docker # or podman?
 
+METADATA_FILE=./data/metadata.json
 
 if [[ $REGION == "all" ]] ; then
     R="*"
@@ -27,6 +27,7 @@ else
     R=$REGION
 fi
 
+touch $METADATA_FILE
 
 # Choose docker compose or docker-compose command
 if command -v docker &> /dev/null && docker compose version &> /dev/null; then
@@ -75,6 +76,7 @@ if [[ $ACTION == "reset_data" ]]; then
     $PELIAS elastic create
     $PELIAS prepare interpolation
     cd -
+    echo "{}" > $METADATA_FILE
     set +x
 fi
 
@@ -109,6 +111,8 @@ if [[ $ACTION == "update" || $ACTION ==  "all" ]] ; then
     $PELIAS compose up
 
     cd -
+    
+    (test -s $METADATA_FILE && cat $METADATA_FILE || echo '{}') | jq ".$REGION.update = \"`date --iso-8601=seconds`\"" > $METADATA_FILE.tmp && cat $METADATA_FILE.tmp > $METADATA_FILE && rm $METADATA_FILE.tmp
 
     echo "Import done"
     echo 

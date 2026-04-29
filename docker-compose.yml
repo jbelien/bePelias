@@ -22,7 +22,10 @@ services:
             - IN_PORT=4001  # Internal port. Should correspond to the first value in the above "ports"
             - POSTCODE_MATCH_LENGTH=3  # Minimum number of characters to match a postcode, between input postcode and Pelias postcode. 4 = fully trust input postcode. 
         networks:
-            - belgium_bepelias_default  
+            - belgium_bepelias_default
+        volumes:
+            - ./data/:/data/   # Only needs metadata.json, but if the file does not exist, it would be created as a directory 
+                               # if we tried to mount ./data/metadata.json:/data/metadata.json.
         image: bepelias/api
         container_name: bepelias_api
         restart: always

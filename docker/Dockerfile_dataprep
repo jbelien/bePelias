@@ -12,3 +12,4 @@ RUN mvn clean install -DskipTests
 
 COPY ./scripts/Makefile /bepelias/Makefile
 COPY src/bepelias/prepare_best_files.py src/bepelias/__init__.py /bepelias/
+RUN echo ".level= WARNING" > logging.properties

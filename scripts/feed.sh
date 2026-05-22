@@ -27,6 +27,7 @@ else
     R=$REGION
 fi
 
+mkdir -m 777 -p data
 touch $METADATA_FILE
 
 # Choose docker compose or docker-compose command
@@ -47,11 +48,10 @@ if [[ $ACTION == "prepare_csv" ||  $ACTION ==  "all" ]]; then
     
     rm -f data/bestaddresses_*be$R.csv
     
-    mkdir -p data
     
     #$DOCKER_COMPOSE run --rm dataprep  /prepare_csv.sh  $REGION
 
-    $DOCKER_COMPOSE run --remove-orphans -w /bepelias dataprep make all REGION=$REGION
+    $DOCKER_COMPOSE run -u $(id -u ${USER}):$(id -g ${USER}) --remove-orphans -w /bepelias dataprep make all REGION=$REGION
 
     # Variants:
     # $DOCKER_COMPOSE run --remove-orphans -w /bepelias dataprep prepare all REGION=$REGION

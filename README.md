@@ -28,7 +28,7 @@ This project is composed of two parts:
 Steps (short version): 
 
 ```
-make        # Build pelias & bepelias docker images (~30 minutes)
+make build  # Build pelias & bepelias docker images (~30 minutes)
 make feed   # Prepare files from Bosa and load them. Should also be run to update data (~1h30)
 make run    # Run Pelias and bePelias API (with default parameters)
 ```

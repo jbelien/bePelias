@@ -135,7 +135,7 @@ $(DATA_IN)/%.xml_extracted: $(DATA_IN)/%.regional_zip_extracted
 # Marker: (Brussels|Flanders|Wallonia).openaddress_ready 
 
 $(DATA_IN)/%.openaddress_ready: $(DATA_IN)/%.xml_extracted
-	echo ".level= WARNING" > logging.properties
+#	echo ".level= WARNING" > logging.properties
 	 
 	$$JAVA_HOME/bin/java -Djava.util.logging.config.file="logging.properties" -jar $(CONVERTER_JAR) -i $(DATA_IN) $(REGION_FLAGS_$*)
 	rm -f $(DATA_IN)/openaddress-be*.csv \

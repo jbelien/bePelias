@@ -205,10 +205,10 @@ class ResultChecker:
                 for feat_street_name in self.get_feature_street_names(feature):
                     feat_street_name = self._remove_street_types(unidecode(feat_street_name))
 
-                    if with_city:
-                        feat_street_names = [feat_street_name]
-                    else:  # prepend street name with city names
+                    if with_city:  # prepend street name with city names
                         feat_street_names = [f"{cty}, {feat_street_name}" for cty in self._get_feature_city_names(feature)]
+                    else:
+                        feat_street_names = [feat_street_name]
 
                     for feat_street_name in feat_street_names:
                         sim = self._apply_sim_functions(feat_street_name, in_street_name)
@@ -361,7 +361,7 @@ class ResultChecker:
             else:
                 s2 = s2[1:]
 
-        return int(len(s1) == 0)  # and len(s2)==0
+        return float(len(s1) == 0)  # and len(s2)==0
 
     def _apply_sim_functions(self, str1, str2, threshold=None):
         """
@@ -384,8 +384,8 @@ class ResultChecker:
         Returns
         -------
         sim : float or None
-            First string similarity between str1 and str2 bellow threshold. If None
-            of them if bellow, return None.
+            First string similarity between str1 and str2 above threshold. If None
+            of them is above, return None.
         """
 
         if not threshold:

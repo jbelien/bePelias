@@ -93,7 +93,7 @@ prepare: $(PREPARED_MARKER)
 $(GLOBAL_ZIP):
 	mkdir -p $(DATA_IN)
 	wget --progress=dot:giga -O "$@" https://opendata.bosa.be/download/best/best-full-latest.zip
-	$(call update_md,.download,`date --iso-8601=seconds`)
+	$(call update_md,.$(REGION).download,`date --iso-8601=seconds`)
 
 
 # --- Step 1: extract regional zip(s) from the global zip ---
@@ -105,7 +105,6 @@ $(DATA_IN)/%.regional_zip_extracted: $(GLOBAL_ZIP)
 	mkdir -p $(DATA_IN)
 
 	cd $(DATA_IN) && unzip -o best-full-latest.zip  $(REG)'*.zip'
-# 	cat $(DATA_OUT)/metadata.json | jq ".$(REGION).xmlversion = \"`ls $(DATA_IN)/*Address*.zip |head -1 | tr -d -c 0-9`\"" > $(DATA_OUT)/metadata.json
 	
 	$(call update_md,.$(REGION).xmlversion,`ls $(DATA_IN)/*Address*.zip |head -1 | tr -d -c 0-9`)
 

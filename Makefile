@@ -67,7 +67,6 @@ cleanup-pelias:
 cleanup-folders:
 	rm -rf pelias
 	rm -rf data
-	echo "Advice: try also to run:
-	 - docker system prune -a -f
-	 - docker volume prune -f
-	"
+	echo "Advice: try also to run: \n\
+	 - docker system prune -a -f \n\
+	 - docker volume prune -f"

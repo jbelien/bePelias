@@ -24,7 +24,7 @@ cd $DIR
 $PELIAS compose pull
 $PELIAS elastic start
 $PELIAS elastic wait 
-$PELIAS elastic create
+$PELIAS elastic create  || true   # Allow to run build_pelias.sh two times in a row without error
 $PELIAS download wof
 $PELIAS download osm # needed for interpolation
 $PELIAS prepare placeholder

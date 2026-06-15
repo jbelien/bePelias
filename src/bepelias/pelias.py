@@ -266,7 +266,7 @@ class Pelias:
         """
 
         delay = 2
-        for i in range(10):
+        for _ in range(10):
             pel = self.check(city_test_from)
             if pel is True:
                 log("Pelias working properly")
@@ -282,6 +282,6 @@ class Pelias:
                 # raise e
             time.sleep(delay)
             delay += 0.5
-        if i == 9:
+        if pel is not True:
             vlog("Pelias not up & running !")
             vlog(f"Pelias: {self.geocode_api}")

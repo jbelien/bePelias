@@ -656,5 +656,5 @@ Street "1..*" --  "1" Municipality
 - https://bepelias.smalsrech.be/REST/bepelias/v1/geocode?streetName=Route+du+Condroz&houseNumber=235&postCode=4550&postName=Nandrin&mode=advanced&withPeliasResult=True : 2x le premier résultat, une fois avec interpolation, l'autre non. Suppression des doublons avant interpolation ? Interpolation for all results?
 - is_partial_substring : imposer des espaces, pour éviter que "nxxxxexxxxexxxxfxx" ne match avec neef
 - "Rue Fr Van Cutsem, 1040" fails, but not "Rue F Van Cutsem". 
-- Add some metadata to know the last data update timestamp
-- Migrate feed.sh into a Makefile
+- all.xmlversion : mis à jour 3x quand region=all
+- pelias.wait() is never used

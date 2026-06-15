@@ -217,7 +217,7 @@ def _geocode_unstructured(address: Annotated[str,
                              Query(description="""
 How Pelias is used:
 
-- basic: Just call the structured version of Pelias
+- basic: Just call the unstructured version of Pelias
 - advanced: Try several variants until it gives a result""")] = "advanced",
                           with_pelias_result: Annotated[
                             bool,

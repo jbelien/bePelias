@@ -27,7 +27,7 @@ else
     R=$REGION
 fi
 
-mkdir -m 777 -p data
+mkdir -p data
 touch $METADATA_FILE
 
 # Choose docker compose or docker-compose command

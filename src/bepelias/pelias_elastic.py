@@ -1,8 +1,8 @@
 """ Class PeliasElastic, managing calls to Elastic embedded in Pelias
 """
 import json
-from fastapi import status
 import re
+from fastapi import status
 
 from elasticsearch import Elasticsearch, NotFoundError
 

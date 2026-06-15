@@ -314,7 +314,7 @@ def transform(addr_data, transformer, remove_patterns):
             if "-" in addr_data["house_number"]:
                 addr_data["house_number"] = addr_data["house_number"].split("-")[0].strip()  # useful? "match" bellow will do the same
 
-            hn = re.match("^[0-9]+", addr_data["house_number"])
+            hn = re.match("^[0-9]+", addr_data["house_number"] or "")
             if hn:
                 addr_data["house_number"] = hn[0]
     elif transformer == "clean":

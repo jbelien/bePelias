@@ -76,7 +76,7 @@ class BePelias:
             # Fallback if no interpolation coords available
             vlog("    No coordinates found with interpolation, try to search with postcode and part of municipality...")
             postalcode = feat["properties"].get("postalcode", "")
-            if re.match("^[0-9]+$", postalcode):
+            if re.match("^[0-9]+$", postalcode or ""):
                 vlog(f"    Postalcode in feature: {postalcode}")
 
                 part_of_munic_name = feat.get("properties", {}).get("addendum", {}).get("best", {}).get("part_of_municipality", {}).get("name", "")
@@ -95,9 +95,9 @@ class BePelias:
                         postcode_res["items"] = filtered_items
                 # log(postcode_res)
 
-                feat["geometry"]["coordinates_orig"] = [0, 0]
-                feat["geometry"]["coordinates"] = postcode_res["items"][0]["coordinates"]
-                feat["bepelias"] = {"interpolated": "postcode_center"}
+                    feat["geometry"]["coordinates_orig"] = [0, 0]
+                    feat["geometry"]["coordinates"] = postcode_res["items"][0]["coordinates"]
+                    feat["bepelias"] = {"interpolated": "postcode_center"}
 
     def _interpolate(self, feature):
         """
@@ -105,7 +105,7 @@ class BePelias:
 
         Parameters
         ----------
-        feature : str
+        feature : dict
             A Pelias feature.
 
         Returns
@@ -306,7 +306,7 @@ class BePelias:
                                                              transf_addr_data["post_name"],
                                                              layers=layers)
 
-                        if transf_addr_data["post_name"] is not None:
+                        if transf_addr_data["post_code"] is not None:
                             if check_postcode:
                                 pelias_res = self.res_checker.filter_postcode(pelias_res, transf_addr_data["post_code"])
                         else:
@@ -391,8 +391,8 @@ class BePelias:
                     if prop["housenumber"] == house_number:
                         score["housescore"] += 1.0
                     else:
-                        n1 = re.match("[0-9]+", prop["housenumber"])
-                        n2 = re.match("[0-9]+", house_number)
+                        n1 = re.match("[0-9]+", prop["housenumber"] or "")
+                        n2 = re.match("[0-9]+", house_number or "")
                         if n1 and n2 and n1[0] == n2[0]:  # len(n1)>0 and n1==n2:
                             score["housescore"] += 0.8
                 if res["features"][0]["geometry"]["coordinates"] != [0, 0]:
@@ -509,7 +509,7 @@ class BePelias:
             dict: json result
         """
 
-        remove_patterns_unstruct = [(r"\(.+?\)",  "")]
+        remove_patterns_unstruct = [(r"\(.+\)",  "")]
         precision_order = {"address": 0,
                            "address_interpol": 1,
                            "address_streetcenter": 2,
@@ -659,6 +659,8 @@ class BePelias:
 
                 pelias_res = self._advanced_mode(street_name, house_number, post_code, post_name,
                                                  transformer_sequence=[(["struct", "unstruct"], [])])
+
+                add_precision(pelias_res)
 
                 return to_rest_guidelines(pelias_res, with_pelias_result)
 

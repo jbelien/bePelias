@@ -384,7 +384,7 @@ def test_batch_call(filename: Literal['tests/data/data.csv']):
         #  assert len(json_item["items"]) > 0, f"Expecting at least one result: {json_item}"
         assert json_item["total"] == len(json_item["items"])
         for item in json_item["items"]:
-            assert "precision" in item
+            assert "precision" in item, f"Expecting precision in {item}"
 
 
 @pytest.mark.parametrize(

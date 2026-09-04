@@ -1,8 +1,12 @@
-FROM bepelias/base
+FROM python:3.14-alpine
 
-ENV PIP_ROOT_USER_ACTION=ignore
+RUN apk add build-base
 
-COPY docker/requirements_api.txt ./
+COPY docker/requirements_base.txt .
+COPY docker/requirements_api.txt .
+
+RUN python3 -m venv bepelias_venv
+RUN bepelias_venv/bin/pip3 install -r requirements_base.txt
 RUN bepelias_venv/bin/pip3 install -r requirements_api.txt
 
 COPY scripts/start_api.sh ./

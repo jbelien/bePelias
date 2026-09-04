@@ -20,7 +20,7 @@ jobs:
           context: .
           file: docker/Dockerfile_api
           push: ${{ github.event_name != 'pull_request' }}
-          tags: bepelias-api:$(date +%s),bepelias-api:latest
+          tags: bepelias-api:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -36,6 +36,6 @@ jobs:
           context: .
           file: docker/Dockerfile_dataprep
           push: ${{ github.event_name != 'pull_request' }}
-          tags: bepelias-dataprep:$(date +%s),bepelias-dataprep:latest
+          tags: bepelias-dataprep:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max

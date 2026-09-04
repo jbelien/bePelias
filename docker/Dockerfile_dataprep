@@ -2,6 +2,8 @@ FROM python:3.12-alpine
 
 RUN apk add build-base gdal-dev geos-dev openjdk17
 
+COPY best-tools-artifact/converter-*.jar /best-tools/java/
+
 COPY docker/requirements_base.txt .
 
 RUN python3 -m venv bepelias_venv

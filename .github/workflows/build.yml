@@ -31,7 +31,8 @@ jobs:
       - uses: actions/upload-artifact@v7
         with:
           name: best-tools-artifact
-          path: java/target
+          path: |
+            java/converter/target
 
   build-docker-api:
     runs-on: ubuntu-latest

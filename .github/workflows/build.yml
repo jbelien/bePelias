@@ -11,13 +11,25 @@ jobs:
   build-docker-api:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-    - name: Build the Docker image
-      run: docker build . --file docker/Dockerfile_api --tag bepelias-api:$(date +%s)
+    - uses: actions/checkout@v7
+    - uses: docker/build-push-action@v7
+      with:
+        context: .
+        file: docker/Dockerfile_api
+        push: ${{ github.event_name != 'pull_request' }}
+        tags: bepelias-api:$(date +%s),bepelias-api:latest
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
 
   build-docker-dataprep:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-    - name: Build the Docker image
-      run: docker build . --file docker/Dockerfile_dataprep --tag bepelias-dataprep:$(date +%s)
+    - uses: actions/checkout@v7
+    - uses: docker/build-push-action@v7
+      with:
+        context: .
+        file: docker/Dockerfile_dataprep
+        push: ${{ github.event_name != 'pull_request' }}
+        tags: bepelias-dataprep:$(date +%s),bepelias-dataprep:latest
+        cache-from: type=gha
+        cache-to: type=gha,mode=max

@@ -2,6 +2,6 @@ pandas==2.2.3
 numpy==2.0.2 
 urllib3==2.6.3
 requests==2.33.0 
-geopandas==1.1.2
+geopandas==1.1.4
 shapely==2.0.7
 tqdm==4.67.1

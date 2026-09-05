@@ -58,7 +58,6 @@ jobs:
         uses: docker/metadata-action@v6
         with:
           images: |
-            ${{ github.repository }}/api
             ghcr.io/${{ github.repository }}/api
           tags: |
             type=schedule
@@ -121,7 +120,6 @@ jobs:
         uses: docker/metadata-action@v6
         with:
           images: |
-            ${{ github.repository }}/dataprep
             ghcr.io/${{ github.repository }}/dataprep
           tags: |
             type=schedule

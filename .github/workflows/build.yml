@@ -68,6 +68,10 @@ jobs:
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
             type=sha
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.title=bePelias API
+            org.opencontainers.image.description=bePelias API Docker image
       - name: Build and push Docker image
         id: push
         uses: docker/build-push-action@v7
@@ -76,6 +80,7 @@ jobs:
           file: docker/Dockerfile_api
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
       - name: Attest
@@ -126,6 +131,10 @@ jobs:
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
             type=sha
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.title=bePelias Data Preparation
+            org.opencontainers.image.description=bePelias Data Preparation Docker image
       - name: Build and push Docker image
         id: push
         uses: docker/build-push-action@v7
@@ -134,6 +143,7 @@ jobs:
           file: docker/Dockerfile_dataprep
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
       - name: Attest

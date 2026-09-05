@@ -10,7 +10,7 @@ ACTION ?= all
 
 help:
 	@echo "Targets:"
-	@echo "  make build                             # Build all services (base, api, dataprep, pelias)"
+	@echo "  make build                             # Build all services (api, dataprep, pelias)"
 	@echo "  make build-dataprep                    # Build the dataprep service"
 	@echo "  make build-api                         # Build the api service"
 	@echo "  make build-pelias                      # Build the pelias service"
@@ -22,11 +22,9 @@ help:
 build: build-api build-pelias build-dataprep
 
 build-api:
-	$(DOCKER_COMPOSE) build base ;
 	$(DOCKER_COMPOSE) build api
 
 build-dataprep:
-	$(DOCKER_COMPOSE) build base ;
 	$(DOCKER_COMPOSE) build dataprep
 
 build-pelias:
@@ -39,7 +37,7 @@ run: run-pelias run-api
 
 run-pelias:
 	cd $(DIR) && \
-	$(PELIAS) compose up 
+	$(PELIAS) compose up
 
 run-api:
 	$(DOCKER_COMPOSE) up -d --no-deps --remove-orphans api
@@ -57,7 +55,7 @@ stop-pelias:
 cleanup: cleanup-pelias cleanup-api cleanup-folders
 
 cleanup-api:
-	$(DOCKER_COMPOSE) down --remove-orphans --rmi all 
+	$(DOCKER_COMPOSE) down --remove-orphans --rmi all
 
 cleanup-pelias:
 	cd $(DIR) && \

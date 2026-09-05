@@ -54,7 +54,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v6
         with:
-          images: ghcr.io/${{ github.repository }}/bepelias-api
+          images: ghcr.io/${{ github.repository }}/api
       - name: Build and push Docker image
         uses: docker/build-push-action@v7
         with:
@@ -90,7 +90,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v6
         with:
-          images: ghcr.io/${{ github.repository }}/bepelias-dataprep
+          images: ghcr.io/${{ github.repository }}/dataprep
       - name: Build and push Docker image
         uses: docker/build-push-action@v7
         with:
